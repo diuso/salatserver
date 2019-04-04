@@ -1,0 +1,11 @@
+UPDATE SALAT_MENU SET NAME="Salute" WHERE ID = 2
+INSERT INTO SALAT_MENU (ID, SIZE, NAME, PRICE) VALUES ('36', 'maly', 'Mexicano' , '4,50')
+INSERT INTO SALAT_MENU (ID, SIZE, NAME, PRICE) VALUES ('37', 'velky', 'Four cheese' , '5,9')
+INSERT INTO SALAT_MENU (ID, SIZE, NAME, PRICE) VALUES ('42', 'velky', 'Slovak' , '5,5')
+
+
+DELETE FROM POWER_USERS WHERE admin_ip_address='192.168.160.120'
+
+UPDATE POWER_USERS SET admin_ip_address="192.168.160.109" where admin_name = "Juro Malatin"
+
+INSERT INTO POWER_USERS (admin_name, admin_ip_address) VALUES ('Juraj Malatin', '192.168.160.109')

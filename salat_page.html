@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Salatovy server</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link href="bootstrap.min.css" rel="stylesheet">
+    <link href="bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="custom.css" rel="stylesheet">
+
+  </head>
+
+  <body class="preview" data-spy="scroll" data-target=".subnav" data-offset="80">
+	<div class="container">
+
+	<!-- Masthead
+	================================================== -->
+	<header class="jumbotron subhead" id="overview">
+	  <div class="row">
+		<div class="span10">
+		  <br>
+		  <h1>salatovy server</h1>
+		  <br>
+          <p class="lead">Objednávky salatu na deň __date__</p>
+		</div>
+	  </div>
+	</header>
+
+	<!-- Tables
+	================================================== -->
+	<section id="tables">
+
+	  <table class="table table-bordered table-hover">
+		<thead>
+		  <tr class="salat_group_separator">
+			<th>#</th>
+			<th>Meno</th>
+			<th>salat č.</th>
+			<th>Meno salatu</th>
+			<th>Cena</th>
+			<th>Po zľave</th>
+			<th>Poznámka</th>
+		  </tr>
+		</thead>
+		<tbody>
+		  __list__
+		</tbody>
+	  </table>
+	</section>
+
+	<!-- Forms
+	================================================== -->
+	<section id="forms">
+
+	  <div class="row">
+		<div class="span10 offset1">
+
+            <p class="__ordersAdminInfo__"> __OrderAdminInfo__</p>
+            <p class="__ordersAdminInfo__"> __OrdersAdminExtraInfo__</p>
+            <p class="__ordersClosedInfo__"> Objednávky na dnes sú už uzavreté ! </p>
+
+			<form class="well form-search __hideOrder__" action="/order" method="post">
+			  <input type="text" class="input-small" name="name" placeholder="Meno" alt="Meno" value="__defaultUserName__">
+			  <input type="text" class="input-small" name="salat" placeholder="Číslo salatu" alt="Číslo salatu">
+			  <input type="text" class="input-small" name="note" placeholder="Poznámka" alt="Poznámka">
+			  <button type="submit" class="btn">Objednaj</button>
+			</form>
+
+            <form class="well form-search __hideAdminClass__" action="/lock" method="post">
+			  <button type="submit" class="btn">Uzamkni/Odomkni objednávku</button>
+			</form>
+
+            <form class="well form-search __hideAdminClass__" action="/setOrderAdmin" method="post">
+			  <button type="submit" class="btn">Dnes objednávam ja</button>
+			</form>
+
+		</div>
+	  </div>
+
+	</section>
+
+	<br><br>
+
+	<div class="row">
+		<div class="span10">
+			<p> Pre zrušenie objednávky salatu zadajte meno bez čísla salatu. salat je možné zrušiť len z tej istej IP adresy z akej sa salat zadával !</p>
+			<p> Do poznámky môžete zadať parametre salatu, platbu Gastro lístkom, platbu vopred a pod.</p>
+			<a href="salat.html"> Pa&ste and Salad jedálny lístok </a>
+		</div>
+	</div>
+
+		 <!-- Footer
+		  ================================================== -->
+		  <hr>
+
+		  <footer id="footer">
+			<p class="pull-left">Trademark Matúš Hámorský & Pavol Žiaček. Použitie serveru je len na vlastné riziko :) Podporované prehliadače sú všetky okrem Internet explorera :)</p>
+		  </footer>
+    </div><!-- /container -->
+
+  </body>
+</html>
