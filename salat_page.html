@@ -23,11 +23,11 @@
 	================================================== -->
 	<header class="jumbotron subhead" id="overview">
 	  <div class="row">
-		<div class="span10">
+		<div class="span12">
 		  <br>
-		  <h1>salatovy server</h1>
+		  <h1>Šalátový server</h1>
 		  <br>
-          <p class="lead">Objednávky salatu na deň __date__</p>
+          <p class="lead">Objednávky šalátu/pasty na deň __date__</p>
 		</div>
 	  </div>
 	</header>
@@ -35,17 +35,18 @@
 	<!-- Tables
 	================================================== -->
 	<section id="tables">
-
-	  <table class="table table-bordered table-hover">
+	  <table class="table table-bordered table-hover" style="width:1200px;">
 		<thead>
-		  <tr class="salat_group_separator">
-			<th>#</th>
-			<th>Meno</th>
-			<th>salat č.</th>
-			<th>Meno salatu</th>
-			<th>Cena</th>
-			<th>Po zľave</th>
-			<th>Poznámka</th>
+		  <tr class="salat_group_separator" >
+			<th style="width:2px;">#</th>
+			<th style="width:105px;">Meno</th>
+			<th style="width:105px;">Názov</th>
+			<th style="width:60px;">Typ</th>
+      <th style="width:55px;">Veľkosť</th>
+			<th style="width:100px;">Dressing</th>
+			<th style="width:100px;">Polievka</th>
+      <th style="width:220px;">Poznamka</th>
+      <th style="width:30px;">Cena</th>
 		  </tr>
 		</thead>
 		<tbody>
@@ -59,16 +60,36 @@
 	<section id="forms">
 
 	  <div class="row">
-		<div class="span10 offset1">
+		<div class="span12" style="width:1170px;">
 
             <p class="__ordersAdminInfo__"> __OrderAdminInfo__</p>
             <p class="__ordersAdminInfo__"> __OrdersAdminExtraInfo__</p>
             <p class="__ordersClosedInfo__"> Objednávky na dnes sú už uzavreté ! </p>
 
 			<form class="well form-search __hideOrder__" action="/order" method="post">
-			  <input type="text" class="input-small" name="name" placeholder="Meno" alt="Meno" value="__defaultUserName__">
-			  <input type="text" class="input-small" name="salat" placeholder="Číslo salatu" alt="Číslo salatu">
-			  <input type="text" class="input-small" name="note" placeholder="Poznámka" alt="Poznámka">
+			  <input type="text" class="input-medium" name="customer" placeholder="Meno" alt="Meno" value="__defaultUserName__">
+        <select name="salat_id" class="input-medium">
+           __salat_list__
+        </select>
+        <select name="typ" class="input-small" >
+          <option value='salat'> Šalát</option>
+          <option value='pasta'> Pasta</option>
+          <option value='polnapol'> Pol/Pol</option>
+        </select>
+        <select name="ssize" class="input-small" >
+          <option value='maly'> Malý </option>
+          <option value='velky'> Veľký </option>
+        </select>
+        <select name="dressing_id" class="input-medium">
+          __dressing_list__
+        </select>
+
+        <select name="soup" class="input-medium" >
+          <option value='ziadna'>Bez polievky</option>
+          <option value='paradajkova'>Paradajková so syrom</option>
+          <option value='druha'> Druhá</option>
+        </select>
+        <input type="text" class="input-xlarge" name="note" placeholder="Poznámka" alt="Poznámka">
 			  <button type="submit" class="btn">Objednaj</button>
 			</form>
 
@@ -88,9 +109,9 @@
 	<br><br>
 
 	<div class="row">
-		<div class="span10">
-			<p> Pre zrušenie objednávky salatu zadajte meno bez čísla salatu. salat je možné zrušiť len z tej istej IP adresy z akej sa salat zadával !</p>
-			<p> Do poznámky môžete zadať parametre salatu, platbu Gastro lístkom, platbu vopred a pod.</p>
+		<div class="span12">
+		<!--	<p> Pre zrušenie objednávky salatu zadajte meno bez čísla salatu. salat je možné zrušiť len z tej istej IP adresy z akej sa salat zadával !</p>-->
+			<p> Do poznámky môžete zadať 'krutony navyse', 'cibulka namiesto fazule' a pod.</p>
 			<a href="salat.html"> Pa&ste and Salad jedálny lístok </a>
 		</div>
 	</div>
@@ -100,7 +121,7 @@
 		  <hr>
 
 		  <footer id="footer">
-			<p class="pull-left">Trademark Matúš Hámorský & Pavol Žiaček. Použitie serveru je len na vlastné riziko :) Podporované prehliadače sú všetky okrem Internet explorera :)</p>
+			<p class="pull-left">Trademark Matúš Hámorský & Pavol Žiaček & Juraj Malatin. Použitie serveru je len na vlastné riziko :) Podporované prehliadače sú všetky okrem Internet explorera :)</p>
 		  </footer>
     </div><!-- /container -->
 

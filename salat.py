@@ -5,7 +5,7 @@ import sqlite3
 import os.path
 import io
 from datetime import datetime
-import scrape
+# import scrape
 import time
 
 salat_zlava_map = { 1:0.3, 2:0.3, 3:0.3, 4:0.3,
@@ -13,32 +13,33 @@ salat_zlava_map = { 1:0.3, 2:0.3, 3:0.3, 4:0.3,
                     9:0.6, 10:0.6, 11:0.6, 12:0.6,
                     13:0.6, 14:0.6, 15:0.6, 16:0.6
                 }
-
+PRICE_MENU_SMALL = 4.5
+PRICE_MENU_BIG = 5.5
 salat_box_price = 0.33
 salat_delivery_price = 0.66
 salat_delivery_treshold = 20
-salat_card_discount = 0.05
-
 if not os.path.exists ('salat.db3'):
     dbcon = sqlite3.connect ('salat.db3')
     cur = dbcon.cursor()
-    cur.execute ("""CREATE TABLE SALAT (date integer not null, name text not null, salat_id integer not null, note text, ip_address text not null);""")
-    cur.execute ("""CREATE TABLE IF NOT EXISTS SALAT_MENU (ID INTEGER, SIZE TEXT, NAME TEXT, PRICE FLOAT, PRIMARY KEY (ID))""")
+    cur.execute ("""CREATE TABLE SALAT (date integer not null, customer text not null, salat_id integer not null,salat_name text, type text not null,size text not null,dressing_id integer not null, dressing_name text not null,note text, soup text not null,price float not null,ip_address text not null);""")
+    cur.execute ("""CREATE TABLE IF NOT EXISTS SALAT_MENU (ID INTEGER, NAME TEXT, PRICE_SMALL FLOAT,PRICE_BIG FLOAT, PRIMARY KEY (ID));""")
+    cur.execute ("""CREATE TABLE IF NOT EXISTS DRESSING_MENU (ID INTEGER not null, NAME TEXT);""")
+    cur.execute ("""CREATE TABLE IF NOT EXISTS SOUP_MENU (ID INTEGER not null, NAME TEXT);""")
     cur.execute ("""CREATE TABLE IF NOT EXISTS LOCK_ORDER (date integer not null, admin_ip_address not null, lock integer not null);""")
     cur.execute ("""CREATE TABLE IF NOT EXISTS POWER_USERS (admin_ip_address not null, admin_name text);""")
     dbcon.commit()
-    scrape.scrape_init(dbcon)
-
+    # scrape.scrape_init(dbcon)
     cur.close()
 else:
     dbcon = sqlite3.connect ('salat.db3')
 
 assert os.path.exists ('salat_page.html')
+
 with io.open ('salat_page.html', 'r', encoding='utf-8') as rf:
     template = rf.read()
 
 def get_default_user_name(cur,ip):
-    cur.execute(""" SELECT NAME FROM SALAT WHERE IP_ADDRESS=? ORDER BY DATE ASC""", (ip,))
+    cur.execute(""" SELECT CUSTOMER FROM SALAT WHERE IP_ADDRESS=? ORDER BY DATE ASC""", (ip,))
     row = cur.fetchone()
 
     if not row:
@@ -46,35 +47,66 @@ def get_default_user_name(cur,ip):
     else:
         return row[0]
 
+def getSalatList(cur,type):
+    salat_list = []
+    cur.execute ("""SELECT SALAT_MENU.ID,SALAT_MENU.NAME,SALAT_MENU.PRICE_SMALL,SALAT_MENU.PRICE_BIG FROM SALAT_MENU WHERE SALAT_MENU.NAME IS NOT NULL""")
+    records = cur.fetchall()
+    salat_list_item = ''
+    for row in records:
+        if type == 0:
+            salat_list.append((row[0],row[1],row[2],row[3]))
+        elif type == 1:
+            salat_list_item= "<option value='%s'>%s</option>"%(row[0],row[1])
+            salat_list.append(salat_list_item)
+    return salat_list
+
+def getDressingList(cur,type):
+    dressing_list=[]
+    cur.execute ("""SELECT DRESSING_MENU.ID,DRESSING_MENU.NAME FROM DRESSING_MENU WHERE DRESSING_MENU.NAME IS NOT NULL""")
+    records = cur.fetchall()
+    dressing_list_item = ''
+    for row in records:
+        if type == 0:
+            dressing_list.append((row[0],row[1]))
+        elif type == 1:
+            dressing_list_item= "<option value='%s'> %s </option>"%(row[0],row[1])
+            dressing_list.append(dressing_list_item)
+    return dressing_list
+
+def getListedName(list,id):
+    for row in list:
+        if int(row[0]) == int(id):
+            return  (row[1])
+    return ""
+
+def getListedItem(list,id):
+    for row in list:
+        if int(row[0]) == int(id):
+            return  row
+    return ""
+
+def getSalatPrice(salatWithPrices,size,soup):
+    if soup == "ziadna":
+        price = salatWithPrices[2] if size == 'maly' else salatWithPrices[3]
+    else:
+        price = PRICE_MENU_SMALL if size == 'maly' else PRICE_MENU_BIG
+    print 'returning '
+    return price
+
 def get_total_price(salatPrice):
     print 'Calculating total price:'
     salatCount= len(salatPrice)
     print 'SALAT count : %d' % salatCount
-
-    salatDiscountCount = int(salatCount / 4)
-    print 'SALAT discount count : %d' % salatDiscountCount
-
-    salatPrice.sort()
-    for i in range(0,salatDiscountCount):
-        salatPrice[i]=1.1;
 
     totalPrice = 0
     idx = 0
     for x in salatPrice:
         print 'SALAT %d: %2.2f' % (idx, x)
         totalPrice += x
-        totalPrice += salat_box_price
         idx += 1
-
-    if( salatCount!=0 and totalPrice<salat_delivery_treshold):
-        totalPrice += salat_delivery_price
-
     print 'Total price : {:2.2f}'.format(float(totalPrice))
 
     return totalPrice
-
-def get_total_discount_price(totalPrice):
-    return  float(totalPrice - (totalPrice*salat_card_discount));
 
 def server_main(environ, start_response):
     ip_address = environ['REMOTE_ADDR']
@@ -111,7 +143,21 @@ def server_main(environ, start_response):
         if data :
             order_admin_name = data[0]
             print 'Admin name is %s' % order_admin_name
-
+    if environ['REQUEST_METHOD'].upper() == 'DELETE':
+        delete_time = time.time()
+        delete_env = environ.copy()
+        delete_env['QUERY_STRING'] = ''
+        form_type = environ['PATH_INFO']
+        print form_type
+        if form_type == '/cancelOrder':
+            print 'cancel Order'
+            print 'deleting'
+            deleting = cgi.FieldStorage(
+                fp=environ['wsgi.input'],
+                environ=delete_env,
+                keep_blank_values=True)
+            customer = deleting["customerButton"].value.strip()[:30]
+            cur.execute ("""DELETE FROM SALAT WHERE DATE=? AND CUSTOMER=? AND IP_ADDRESS=?""", (date, customer, ip_address))
     if environ['REQUEST_METHOD'].upper() == 'POST':
         post_time = time.time()
         post_env = environ.copy()
@@ -153,38 +199,49 @@ def server_main(environ, start_response):
                 environ=post_env,
                 keep_blank_values=True)
 
-
-            name = post["name"].value.strip()[:30]
-            salat = post["salat"].value.strip()
+            customer = post["customer"].value.strip()[:30]
+            salat_id = post["salat_id"].value.strip()
+            type = post["typ"].value.strip()[:50]
+            ssize = post["ssize"].value.strip()[:50]
+            dressing_id = post["dressing_id"].value.strip()[:50]
             note = post["note"].value.strip()[:50]
+            soup = post["soup"].value.strip()[:50]
+
+            salat_list = getSalatList(cur,0)
+            dressing_list = getDressingList(cur,0)
+            salatWithPrices = getListedItem(salat_list,salat_id)
+            salat = getListedName(salat_list,salat_id)
+            dressing = getListedName(dressing_list,dressing_id)
+            price = getSalatPrice(salatWithPrices,ssize,soup)
 
             #Check invalid chars
             invalid_chars = set(' /\<>')
-            if any( (c in invalid_chars) for c in name ) or any( (c in invalid_chars) for c in note ):
+            if any( (c in invalid_chars) for c in customer ) or any( (c in invalid_chars) for c in note ):
+                print note
+                print customer
                 print "Invalid chars detected !"
-                name = ''
+                customer = ''
                 salat = ''
                 note = ''
 
-            if name != "" and salat == "":
+            if customer != "" and salat == "":
                 print 'deleting'
-                cur.execute ("""DELETE FROM SALAT WHERE DATE=? AND NAME=? AND IP_ADDRESS=?""", (date, name, ip_address))
-            elif name != "" and salat != "":
-                cur.execute ("""SELECT NAME FROM SALAT WHERE DATE = ? AND NAME=? """, (date, name))
+                cur.execute ("""DELETE FROM SALAT WHERE DATE=? AND CUSTOMER=? AND IP_ADDRESS=?""", (date, customer, ip_address))
+            elif customer != "" and salat != "":
+                cur.execute ("""SELECT CUSTOMER FROM SALAT WHERE DATE = ? AND CUSTOMER=? """, (date, customer))
                 row = cur.fetchone()
                 if row:
-                    cur.execute ("""SELECT NAME FROM SALAT WHERE DATE = ? AND NAME=? AND IP_ADDRESS=? """, (date, name, ip_address))
+                    cur.execute ("""SELECT CUSTOMER FROM SALAT WHERE DATE = ? AND CUSTOMER=? AND IP_ADDRESS=? """, (date, customer, ip_address))
                     valid_update = cur.fetchone()
 
                     if valid_update:
                         print ('updating')
-                        cur.execute ("""UPDATE SALAT SET SALAT_ID=?, NOTE=? WHERE DATE=? AND NAME=? """, (salat, note, date, name))
+                        cur.execute ("""UPDATE SALAT SET SALAT_ID=?,SALAT_NAME=?,TYPE=?, SIZE=?,DRESSING_ID=?,DRESSING_NAME=?,NOTE=?,SOUP=?,PRICE=? WHERE DATE=? AND CUSTOMER=? """, (salat_id, salat,type,ssize,dressing_id,dressing,note,soup,price, date, customer))
                 else:
                     print ('inserting')
-                    cur.execute ("""INSERT INTO SALAT (DATE, NAME, SALAT_ID, NOTE, IP_ADDRESS) VALUES (?,?,?,?,?)""", (date, name, salat, note, ip_address))
+                    cur.execute ("""INSERT INTO SALAT (DATE, CUSTOMER, SALAT_ID,SALAT_NAME,TYPE, SIZE,DRESSING_ID,DRESSING_NAME, NOTE, SOUP,PRICE,IP_ADDRESS) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""", (date, customer, salat_id, salat, type,ssize,dressing_id,dressing,note, soup,price,ip_address))
             else:
                 pass # do nothing
-
         timer_res = time.time() - post_time
         print "POST TIMING %2.2f" % float(timer_res)
 
@@ -195,24 +252,28 @@ def server_main(environ, start_response):
         start_response(status, headers)
         return '<html><body>redirecting</body></html>'
 
+
     listing = []
     cur = dbcon.cursor()
+
     cur.execute(""" SELECT COUNT(*) FROM SALAT WHERE DATE = ? """, (date,))
     row = cur.fetchone()
     salat_count = row[0]
 
-    cur.execute ("""SELECT SALAT.NAME, SALAT_ID, SALAT_MENU.NAME, PRICE, CASE WHEN NOTE IS NULL THEN "" ELSE NOTE END FROM SALAT,SALAT_MENU WHERE DATE = ? AND CAST(SALAT.SALAT_ID as integer)=SALAT_MENU.ID""", (date,))
-
-    salat_cena_zlava = salat_zlava_map.get(salat_count, 0.0)
+    cur.execute ("""SELECT SALAT.CUSTOMER, SALAT_NAME, TYPE,SIZE,DRESSING_NAME,SOUP,PRICE, CASE WHEN NOTE IS NULL THEN "" ELSE NOTE END FROM SALAT,SALAT_MENU WHERE DATE = ? AND CAST(SALAT.SALAT_ID as integer)=SALAT_MENU.ID""", (date,))
+    salat_cena_zlava = 0.0;  ###salat_zlava_map.get(salat_count, 0.0)
 
     idx = 1
     salatPrices= []
     for row in cur:
-        s =  "<tr><td>%d</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s &euro;</td> <td>%2.2f &euro;</td> <td>%s</td> </tr>" % (idx, row[0], row[1], row[2], row[3], float(row[3].replace(',', '.')) - salat_cena_zlava, row[4])
+        formattedprice = '{0:2.2f}'.format(row[6])
+        cancelActionText = "<form class='form-inline' action='cancelOrder/"
+        cancelActionText += row[0]
+        cancelActionText += " method='DELETE'><div class='input-group'><span class='input-group-btn'><button type='submit' name='customerButton' class='btn btn-success' id='bt'>Zrus<i class='fa fa-angle-right'></i></button></span></div></form>"
+        s =  "<tr><td>%d</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td> <td>%s</td><td>%s</td> <td>%s</td> <td>%s</td> <td> %s </td> </tr>" % (idx, row[0], row[1], row[2], row[3], row[4], row[5],row[7],formattedprice,cancelActionText)
         listing.append (s)
-        salatPrices.append(float(row[3].replace(',', '.')))
         if idx % 4 == 0 :
-            s =  '<tr class="salat_group_separator"> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> </tr>'
+            s =  '<tr class="salat_group_separator"> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td><td></td> <td></td> </tr>'
             listing.append (s)
         idx += 1
 
@@ -222,8 +283,9 @@ def server_main(environ, start_response):
     status = '200 OK'
     headers = [('Content-type', 'text/html;charset=utf-8')]
     start_response(status, headers)
-
-    ret = template.replace('__date__', datetime.now().strftime("%d.%m.%Y")).replace('__list__', ''.join (listing)).replace('__defaultUserName__', ''.join(defaultUserName))
+    salat_select_list = getSalatList(cur,1);
+    dressing_select_list =getDressingList(cur,1)
+    ret = template.replace('__date__', datetime.now().strftime("%d.%m.%Y")).replace('__list__', ''.join (listing)).replace('__defaultUserName__', ''.join(defaultUserName)).replace('__salat_list__',''.join(salat_select_list)).replace('__dressing_list__',''.join(dressing_select_list))
 
     # admin mode check
     admin_ip = environ['REMOTE_ADDR']
@@ -245,11 +307,10 @@ def server_main(environ, start_response):
     else:
         ret = ret.replace('__ordersClosedInfo__', "hide_class");
 
-
     total_price_info = ""
     if admin_mode:
         totalPrice =  get_total_price(salatPrices)
-        total_price_info = 'Cena objednávky :   {0:2.2f}  €, so zľavou 5%: {1:2.2f}  €'.format(float(totalPrice), get_total_discount_price(totalPrice) )
+        total_price_info = 'Cena objednávky :   {0:2.2f}  €'.format(float(totalPrice))
 
     order_info=""
     order_extra_info=""

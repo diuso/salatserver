@@ -1,2 +1,2 @@
-ipyw salat.py >salat.log
+ipy salat.py >salat.log
 pause

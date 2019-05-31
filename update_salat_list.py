@@ -12,7 +12,7 @@ if os.path.exists ('salat.db3'):
     cur = dbcon.cursor()
     cur.execute ("""DELETE FROM SALAT_MENU""")
     dbcon.commit()
-    scrape.scrape_init(dbcon)
+    # scrape.scrape_init(dbcon)
     cur.close()
 else:
     print 'Cannot find database !'
